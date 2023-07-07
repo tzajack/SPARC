@@ -311,11 +311,24 @@ void printEigen(SPARC_OBJ *pSPARC) {
             double *kpt_sendbuf = (double *)malloc(Nk * 3 * sizeof(double));
             int *kpt_recvcounts = (int *)malloc(pSPARC->npkpt * sizeof(int));
             // int *kpt_displs     = (int *)malloc((pSPARC->npkpt+1) * sizeof(int));
-            for (i = 0; i < Nk; i++) {
-                kpt_sendbuf[3*i  ] = pSPARC->k1_loc[i]*pSPARC->range_x/(2.0*M_PI);
-                kpt_sendbuf[3*i+1] = pSPARC->k2_loc[i]*pSPARC->range_y/(2.0*M_PI);
-                kpt_sendbuf[3*i+2] = pSPARC->k3_loc[i]*pSPARC->range_z/(2.0*M_PI);
-            } 
+	    if(pSPARC->BandStr_Plot_Flag == 1)
+	    {
+		for (i = 0; i < Nk; i++){		
+			kpt_sendbuf[3*i  ] = pSPARC->k1_inpt_kpt[i];
+                        kpt_sendbuf[3*i+1] = pSPARC->k2_inpt_kpt[i];
+                        kpt_sendbuf[3*i+2] = pSPARC->k3_inpt_kpt[i];
+		}
+	    }
+            else
+	    {
+            	for (i = 0; i < Nk; i++) {
+                	kpt_sendbuf[3*i  ] = pSPARC->k1_loc[i]*pSPARC->range_x/(2.0*M_PI);
+                	kpt_sendbuf[3*i+1] = pSPARC->k2_loc[i]*pSPARC->range_y/(2.0*M_PI);
+                	kpt_sendbuf[3*i+2] = pSPARC->k3_loc[i]*pSPARC->range_z/(2.0*M_PI);
+                }
+	    }
+		
+		 
             kpt_displs[0] = 0; 
             for (i = 0; i < pSPARC->npkpt; i++) {
                 kpt_recvcounts[i]  = Nk_i[i] * 3;
@@ -334,10 +347,21 @@ void printEigen(SPARC_OBJ *pSPARC) {
             // collect all the kpoints assigend to each kptcomm
             double *kpt_sendbuf = (double *)malloc(Nk * 3 * sizeof(double));
             int kpt_recvcounts[1]={0}, i;
-            for (i = 0; i < Nk; i++) {
-                kpt_sendbuf[3*i  ] = pSPARC->k1_loc[i]*pSPARC->range_x/(2.0*M_PI);
-                kpt_sendbuf[3*i+1] = pSPARC->k2_loc[i]*pSPARC->range_y/(2.0*M_PI);
-                kpt_sendbuf[3*i+2] = pSPARC->k3_loc[i]*pSPARC->range_z/(2.0*M_PI);
+            if(pSPARC->BandStr_Plot_Flag == 1)
+            {
+                for (i = 0; i < Nk; i++){
+                        kpt_sendbuf[3*i  ] = pSPARC->k1_inpt_kpt[i];
+                        kpt_sendbuf[3*i+1] = pSPARC->k2_inpt_kpt[i];
+                        kpt_sendbuf[3*i+2] = pSPARC->k3_inpt_kpt[i];
+                }
+            }
+            else
+            {
+                for (i = 0; i < Nk; i++) {
+                        kpt_sendbuf[3*i  ] = pSPARC->k1_loc[i]*pSPARC->range_x/(2.0*M_PI);
+                        kpt_sendbuf[3*i+1] = pSPARC->k2_loc[i]*pSPARC->range_y/(2.0*M_PI);
+                        kpt_sendbuf[3*i+2] = pSPARC->k3_loc[i]*pSPARC->range_z/(2.0*M_PI);
+                }
             }
             // collect reduced kpoints from all kptcomms
             MPI_Gatherv(kpt_sendbuf, Nk*3, MPI_DOUBLE, 
@@ -363,11 +387,22 @@ void printEigen(SPARC_OBJ *pSPARC) {
         kpt_displs[0] = 0;
         displs_all[0] = 0;
         if (pSPARC->BC != 1) {
-            for (i = 0; i < Nk; i++) {
-                kred_i[3*i  ] = pSPARC->k1_loc[i]*pSPARC->range_x/(2.0*M_PI);
-                kred_i[3*i+1] = pSPARC->k2_loc[i]*pSPARC->range_y/(2.0*M_PI);
-                kred_i[3*i+2] = pSPARC->k3_loc[i]*pSPARC->range_z/(2.0*M_PI);
+	    if(pSPARC->BandStr_Plot_Flag == 1)
+            {
+                for (i = 0; i < Nk; i++){
+                        kred_i[3*i  ] = pSPARC->k1_inpt_kpt[i];
+                        kred_i[3*i+1] = pSPARC->k2_inpt_kpt[i];
+                        kred_i[3*i+2] = pSPARC->k3_inpt_kpt[i];
+                }
             }
+	    else
+	    {
+            	for (i = 0; i < Nk; i++) {
+                	kred_i[3*i  ] = pSPARC->k1_loc[i]*pSPARC->range_x/(2.0*M_PI);
+                	kred_i[3*i+1] = pSPARC->k2_loc[i]*pSPARC->range_y/(2.0*M_PI);
+                	kred_i[3*i+2] = pSPARC->k3_loc[i]*pSPARC->range_z/(2.0*M_PI);
+            	}
+	    }
         } else {
             kred_i[0] = kred_i[1] = kred_i[2] = 0.0;
         }
