@@ -976,6 +976,8 @@ typedef struct _SPARC_OBJ{
     double k1_inpt_kpt[L_kpoint],k2_inpt_kpt[L_kpoint],k3_inpt_kpt[L_kpoint];
     int BandStr_Plot_Flag;
     int kpt_per_line;
+    double dens_rho[L_kpoint*L_kpoint*L_kpoint];
+
 
 }SPARC_OBJ;
 
@@ -1237,8 +1239,6 @@ typedef struct _SPARC_INPUT_OBJ{
     /* Band structure plot*/
     int kpt_line_num;
     double kredx[L_kpoint],kredy[L_kpoint],kredz[L_kpoint];
-
-   //double k1_kpt[L_kpoint],k2_kpt[L_kpoint],k3_kpt[L_kpoint];
     int BandStr_Plot_Flag;
     int kpt_per_line;
     

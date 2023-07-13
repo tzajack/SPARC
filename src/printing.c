@@ -86,7 +86,11 @@ void printElecDens(SPARC_OBJ *pSPARC) {
         // send rho_at, rho and b_ref
         D2D(&d2d_sender, &d2d_recvr, gridsizes, pSPARC->DMVertices, pSPARC->electronDens_at, rDMVert, 
             rho_at, pSPARC->dmcomm_phi, sdims, recv_comm, rdims, pSPARC->dmcomm_phi);
+
+  
         
+            
+            
         if (pSPARC->Nspin > 1) { // send rho_at_up, rho_at_down
             D2D(&d2d_sender, &d2d_recvr, gridsizes, pSPARC->DMVertices, pSPARC->electronDens_at+DMnd, rDMVert, 
                 rho_at+Nd, pSPARC->dmcomm_phi, sdims, recv_comm, rdims, pSPARC->dmcomm_phi);
@@ -421,11 +425,26 @@ void printEigen(SPARC_OBJ *pSPARC) {
             }
             int k, Kcomm_indx, i;
             if (pSPARC->Nspin == 1) {
+
+               
                 for (Kcomm_indx = 0; Kcomm_indx < pSPARC->npkpt; Kcomm_indx++) {
                     int Nk_Kcomm_indx = Nk_i[Kcomm_indx];
                     for (k = 0; k < Nk_Kcomm_indx; k++) {
                         int kred_index = kpt_displs[Kcomm_indx]/3+k+1;
-                        fprintf(output_fp,
+                        if (pSPARC->BandStr_Plot_Flag == 1)
+                        {
+                            fprintf(output_fp,
+                                    "\n"
+                                    "kred #%d = (%f,%f,%f)\n"
+                                    "n        eigval                 occ\n",
+                                    kred_index,
+                                    pSPARC->k1_inpt_kpt[kred_index-1],
+                                    pSPARC->k2_inpt_kpt[kred_index-1],
+                                    pSPARC->k3_inpt_kpt[kred_index-1]);
+                        }
+                        else
+                        {
+                            fprintf(output_fp,
                                 "\n"
                                 "kred #%d = (%f,%f,%f)\n"
                                 "n        eigval                 occ\n",
@@ -433,6 +452,7 @@ void printEigen(SPARC_OBJ *pSPARC) {
                                 kred_i[kpt_displs[Kcomm_indx]+3*k], 
                                 kred_i[kpt_displs[Kcomm_indx]+3*k+1], 
                                 kred_i[kpt_displs[Kcomm_indx]+3*k+2]);
+                        }
                         for (i = 0; i < pSPARC->Nstates; i++) {
                             fprintf(output_fp, "%-7d%20.12E %18.12f\n", 
                                 i+1,

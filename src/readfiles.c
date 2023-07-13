@@ -734,36 +734,38 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
             fscanf(input_fp,"%d", &pSPARC_Input->npNdz_SQ);
             fscanf(input_fp, "%*[^\n]\n");
         } else if (strcmpi(str,"BAND_STRUC_PLOT:") == 0) {
-	    fscanf(input_fp, "%d", &pSPARC_Input->BandStr_Plot_Flag);
-	    printf("Band structure plot %d \n", pSPARC_Input->BandStr_Plot_Flag);
+	        fscanf(input_fp, "%d", &pSPARC_Input->BandStr_Plot_Flag);
+	        fscanf(input_fp, "%*[^\n]\n");
+            printf("Band structure plot %d \n", pSPARC_Input->BandStr_Plot_Flag);
 	
 	} else if (strcmpi(str,"KPT_PER_LINE:") == 0) {
             fscanf(input_fp, "%d", &pSPARC_Input->kpt_per_line);
+            fscanf(input_fp, "%*[^\n]\n");
             printf("There are %d number of points per line\n", pSPARC_Input->kpt_per_line);
 	    
         } else if (strcmpi(str,"KPT_NUMLINES:") == 0) {
-            double kpt_x[100],kpt_y[100],kpt_z[100];
-	    fscanf(input_fp, "%d", &pSPARC_Input->kpt_line_num);
+            double kpt_x[L_kpoint],kpt_y[L_kpoint],kpt_z[L_kpoint];
+	        fscanf(input_fp, "%d", &pSPARC_Input->kpt_line_num);
           
-	    printf("There are %d number of lines\n", pSPARC_Input->kpt_line_num);
-	    //fscanf(input_fp, "%*[^\n]\n");
-	    for(int line=0;line<2*pSPARC_Input->kpt_line_num;line+=2)
-	    {    
-		fscanf(input_fp,"%lf %lf %lf",&kpt_x[line],&kpt_y[line],&kpt_z[line]);
-		//fscanf(input_fp, "%*[^\n]\n");
-		pSPARC_Input->kredx[line] = kpt_x[line];
-		pSPARC_Input->kredy[line] = kpt_y[line];
-		pSPARC_Input->kredz[line] = kpt_z[line];
-		fscanf(input_fp,"%lf %lf %lf",&kpt_x[line+1],&kpt_y[line+1],&kpt_z[line+1]);
-		//fscanf(input_fp, "%*[^\n]\n");
-		pSPARC_Input->kredx[line+1] = kpt_x[line+1];
+	        printf("There are %d number of lines\n", pSPARC_Input->kpt_line_num);
+	        fscanf(input_fp, "%*[^\n]\n");
+	        for(int line=0;line<2*pSPARC_Input->kpt_line_num;line+=2)
+	        {    
+		        fscanf(input_fp,"%lf %lf %lf",&kpt_x[line],&kpt_y[line],&kpt_z[line]);
+		        fscanf(input_fp, "%*[^\n]\n");
+		        pSPARC_Input->kredx[line] = kpt_x[line];
+		        pSPARC_Input->kredy[line] = kpt_y[line];
+		        pSPARC_Input->kredz[line] = kpt_z[line];
+		        fscanf(input_fp,"%lf %lf %lf",&kpt_x[line+1],&kpt_y[line+1],&kpt_z[line+1]);
+		        fscanf(input_fp, "%*[^\n]\n");
+		        pSPARC_Input->kredx[line+1] = kpt_x[line+1];
                 pSPARC_Input->kredy[line+1] = kpt_y[line+1];
                 pSPARC_Input->kredz[line+1] = kpt_z[line+1];
-		fscanf(input_fp, "%*[^\n]\n");
-	    }
-	    for(int line=0;line<2*pSPARC_Input->kpt_line_num;line++)
+		        //fscanf(input_fp, "%*[^\n]\n");
+	        }
+	        for(int line=0;line<2*pSPARC_Input->kpt_line_num;line++)
                 printf("k-point %d coordinates: (%lf,%lf,%lf)\n",line,pSPARC_Input->kredx[line],pSPARC_Input->kredy[line],pSPARC_Input->kredz[line]);
-
+            
         } else {
             printf("\nCannot recognize input variable identifier: \"%s\"\n",str);
             exit(EXIT_FAILURE);
@@ -988,6 +990,72 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
     fclose(input_fp);
 } 
 
+
+
+void read_dens(SPARC_OBJ *pSPARC){
+    char *dens_filename = malloc(L_STRING * sizeof(char));
+    char *str           = malloc(L_STRING * sizeof(char));
+    snprintf(dens_filename, L_STRING, "%s.dens", pSPARC->filename);
+
+    FILE *dens_fp = fopen(dens_filename, "r");
+
+    
+    if (dens_fp == NULL) 
+    {
+        printf("\nCannot open file \"%s\"\n", dens_filename);
+        print_usage();
+        exit(EXIT_FAILURE);
+    }
+
+#ifdef DEBUG
+    printf("Reading dens file %s\n",dens_filename);
+#endif 
+    int n_atom,cube_size_x,cube_size_y,cube_size_z;
+    while (!feof(dens_fp))
+    {
+        
+        fscanf(dens_fp, "%*[^\n]\n");
+        fscanf(dens_fp, "%*[^\n]\n");
+        fscanf(dens_fp, "%d", &n_atom);
+        //printf("Num of atoms are: %d", n_atom);
+        fscanf(dens_fp, "%*[^\n]\n");
+        fscanf(dens_fp, "%d", &cube_size_x);
+        fscanf(dens_fp, "%*[^\n]\n");
+        fscanf(dens_fp, "%d", &cube_size_y);
+        fscanf(dens_fp, "%*[^\n]\n");
+        fscanf(dens_fp, "%d", &cube_size_z);
+        fscanf(dens_fp, "%*[^\n]\n");
+
+       // printf("Cell len: %d, %d, %d\n", cube_size_x,cube_size_y,cube_size_z);
+        for(int i=0;i<n_atom;i++)
+            fscanf(dens_fp, "%*[^\n]\n");
+        for (int i = 0; i < cube_size_x; i++) 
+        {
+            for (int j = 0; j < cube_size_y; j++) 
+            {
+                for (int k = 0; k < cube_size_z; k++) 
+                {
+                    fscanf(dens_fp, "%lf", &pSPARC->dens_rho[(i)+(j)*cube_size_x+(k)*cube_size_x*cube_size_y]);
+                }
+            }
+        }
+       /* 
+       for (int i = 0; i < cube_size_x; i++)
+       {
+            for (int j = 0; j < cube_size_y; j++)
+            {
+                for (int k = 0; k < cube_size_z; k++)
+                {
+                    printf("%lf ", pSPARC->dens_rho[(i)+(j)*cube_size_x+(k)*cube_size_x*cube_size_y]);
+                    if (k%6 == 5)
+                        printf("\n");
+                }
+                printf("\n");
+            }
+       }*/ 
+    }        
+
+}
 
 
 /**
@@ -1670,3 +1738,5 @@ void read_pseudopotential_PSP(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC)
         exit(EXIT_FAILURE);
     }
 }
+
+

@@ -51,7 +51,7 @@ void read_ion(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC);
  */
 void read_pseudopotential_PSP(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC);
 
-
+void read_dens(SPARC_OBJ *pSPARC);
 #endif // READFILES_H
 
 

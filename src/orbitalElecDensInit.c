@@ -23,9 +23,51 @@
 #include "orbitalElecDensInit.h"
 #include "isddft.h"
 #include "tools.h"
-
+#include "parallelization.h"
+#include "readfiles.h"
 #define max(x,y) ((x)>(y)?(x):(y))
 
+
+void Distr_Dens(SPARC_OBJ *pSPARC)
+{               
+    if (pSPARC->dmcomm_phi == MPI_COMM_NULL) return;
+    int gridsizes[3], sdims[3], rdims[3], sVert[6];
+    MPI_Comm send_comm;
+    int dmcomm_rank;
+    MPI_Comm_rank(pSPARC->dmcomm_phi, &dmcomm_rank);
+    if (dmcomm_rank) {
+        send_comm = MPI_COMM_NULL;
+    } else {
+        int dims[3] = {1,1,1}, periods[3] = {1,1,1};
+        // create a cartesian topology on one process (rank 0)
+        MPI_Cart_create(MPI_COMM_SELF, 3, dims, periods, 0, &send_comm);
+        //printf("Send comm create finished!\n");
+    }
+    //sleep(2);
+    //D2D_OBJ d2d_sender, d2d_recvr;
+    gridsizes[0] = pSPARC->Nx;
+    gridsizes[1] = pSPARC->Ny;
+    gridsizes[2] = pSPARC->Nz;
+    rdims[0] = pSPARC->npNdx_phi;
+    rdims[1] = pSPARC->npNdy_phi;
+    rdims[2] = pSPARC->npNdz_phi;
+    sdims[0] = sdims[1] = sdims[2] = 1;
+    sVert[0] = 0; sVert[1] = pSPARC->Nx-1;
+    sVert[2] = 0; sVert[3] = pSPARC->Ny-1;
+    sVert[4] = 0; sVert[5] = pSPARC->Nz-1;  
+    //printf("grid x: %d\n",gridsizes[0]);
+    //printf("grid y: %d\n",gridsizes[1]);
+    //printf("grid z: %d\n",gridsizes[2]);
+    //printf("rdimsx: %d\n",rdims[0]);
+    //printf("rdimsy: %d\n",rdims[1]);
+    //printf("rdimsz: %d\n",rdims[2]);
+    //sleep(2);
+    DD2DD(pSPARC, gridsizes,sVert,pSPARC->dens_rho,pSPARC->DMVertices, pSPARC->electronDens_at, send_comm ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );
+    //DD2DD(&sender,&rec, gridsizes,sVert,pSPARC->dens_rho,pSPARC->DMVertices, pSPARC->electronDens_at, send_comm     ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );        
+    //Free_D2D_Target(&d2d_sender, &d2d_recvr, pSPARC->dmcomm_phi, send_comm);
+    //if (dmcomm_rank == 0) 
+    //    MPI_Comm_free(&send_comm);
+}
 
 /**
  * @brief   Initialze electron density.
@@ -41,6 +83,18 @@ void Init_electronDensity(SPARC_OBJ *pSPARC) {
         int  i, DMnd;
         DMnd = pSPARC->Nd_d * (2*pSPARC->Nspin - 1);
         // for 1st Relax step/ MDstep, set electron density to be sum of atomic potentials
+        
+        //printf("Read dens = %lf",pSPARC->dens_rho[0]);
+        //sleep(3);
+       
+        if (pSPARC->BandStr_Plot_Flag == 1)
+        {
+            read_dens(pSPARC);
+            printf("Read dens file!\n");
+            sleep(3);
+            Distr_Dens(pSPARC);
+        }    
+
         if( (pSPARC->elecgs_Count - pSPARC->StressCount) == 0){
             // TODO: implement restart based on previous MD electron density. Things to consider:
             //if (pSPARC->RestartFlag) {
@@ -50,9 +104,18 @@ void Init_electronDensity(SPARC_OBJ *pSPARC) {
                 // 4) Change (pSPARC->elecgs_Count + !pSPARC->RestartFlag) > 3  condition to pSPARC->elecgs_Count >= 3, below
                 //printf("\n\n Implement density extrapolation when restart flag is on!! \n\n");
             //} else {
+           
+                
+
+                
+
             for (i = 0; i < DMnd; i++)
                 pSPARC->electronDens[i] = pSPARC->electronDens_at[i];   
-            //}
+           // printf("DMnd = %d\n",DMnd);
+           // sleep(3);
+           // for (i = 0; i < DMnd; i++)            
+              //  printf("DD2DD: %lf\n", pSPARC->electronDens[i]);
+
             // Storing atom position needed for charge extrapolation in future Relax/MD steps
 			if(pSPARC->MDFlag == 1 || pSPARC->RelaxFlag == 1){
             	for(i = 0; i < 3 * pSPARC->n_atom; i++)
