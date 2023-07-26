@@ -47,16 +47,27 @@ double Calculate_occupation(SPARC_OBJ *pSPARC, double x1, double x2, double tol,
     
     Ns = pSPARC->Nstates;
     Nk = pSPARC->Nkpts_kptcomm;
-    
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
     // find fermi level using Brent's method
     // Efermi = Calculate_FermiLevel(pSPARC, x1, x2, tol, max_iter, occ_constraint);
     int totalLambdaNumber = pSPARC->Nspin * pSPARC->Nkpts_sym * Ns;
     pSPARC->totalLambdaArray = (double *)calloc(totalLambdaNumber, sizeof(double));
     double *totalLambdaArray = pSPARC->totalLambdaArray;
+    double t1 = MPI_Wtime();
     collect_all_lambda(pSPARC, totalLambdaArray);
-    Efermi = local_Calculate_FermiLevel(pSPARC, x1, x2, totalLambdaArray, tol, max_iter, local_occ_constraint);
+    double t2 = MPI_Wtime();
+    if(rank==0)
+        printf("Collect all lambda takes: %fms\n",(t2-t1)*1000);
 
+
+    t1 = MPI_Wtime();
+    Efermi = local_Calculate_FermiLevel(pSPARC, x1, x2, totalLambdaArray, tol, max_iter, local_occ_constraint);
+    t2 = MPI_Wtime();
+    if(rank==0)
+        printf("Calculate local fermi takes: %fms\n",(t2-t1)*1000);
     // find occupations
+    t1 = MPI_Wtime();
     if (pSPARC->isGammaPoint) { // for gamma-point systems
         for (spn_i = 0; spn_i < pSPARC->Nspin_spincomm; spn_i++) {
             for (n = 0; n < Ns; n++) {
@@ -79,7 +90,11 @@ double Calculate_occupation(SPARC_OBJ *pSPARC, double x1, double x2, double tol,
         }    
     }
     free(pSPARC->totalLambdaArray);
+    t2 = MPI_Wtime();
+    if(rank==0)
+         printf("Calculate occ takes: %fms\n",(t2-t1)*1000);
     return Efermi;
+
 }
 
 /**

@@ -76,6 +76,10 @@ void eigSolve_CheFSI_kpt(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error
     if(pSPARC->spincomm_index < 0 || pSPARC->kptcomm_index < 0) return;
     
     int count, kpt, Ncheb = 1; // do Ncheb times Chebyshev filtering for all scfs > 0
+    
+    //if(SCFcount >= 3)
+    //    Ncheb = 10;
+
     pSPARC->Ncheb = (pSPARC->elecgs_Count == 0 && SCFcount > 0) ? Ncheb : 1;
     double lambda_cutoff = 0;
     double _Complex *x0;
@@ -117,8 +121,8 @@ void eigSolve_CheFSI_kpt(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error
         count = pSPARC->rhoTrigger + (SCFcount-1) * pSPARC->Ncheb;
     }   
                 
-    
     while(count < pSPARC->rhoTrigger + SCFcount*pSPARC->Ncheb){
+        
         
         for(spn_i = 0; spn_i < pSPARC->Nspin_spincomm; spn_i++) {
             // each kpt group take care of the kpts assigned to it
@@ -153,9 +157,13 @@ void eigSolve_CheFSI_kpt(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error
         //if(pSPARC->kptcomm_index < 0) return;
                
         // find global minimum and global maximum eigenvalue
+        //double globt1 = MPI_Wtime();
+        
         double eigmin_g = pSPARC->lambda_sorted[0];
         double eigmax_g = pSPARC->lambda_sorted[pSPARC->Nstates-1];
         int spn_disp;
+        double globt1 = MPI_Wtime();
+
         for(spn_i = 0; spn_i < pSPARC->Nspin_spincomm; spn_i++) {
             spn_disp = spn_i*pSPARC->Nkpts_kptcomm*pSPARC->Nstates;
             for(kpt = 0; kpt < pSPARC->Nkpts_kptcomm; kpt++){
@@ -165,7 +173,10 @@ void eigSolve_CheFSI_kpt(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error
                     eigmax_g = pSPARC->lambda_sorted[spn_disp + (kpt+1)*pSPARC->Nstates-1];
             }
         }
-        
+        double globt2 = MPI_Wtime();
+        if(!rank)
+            printf("Collect eigmin and eigmax takes = %fms\n",(globt2-globt1)*1000);  
+        globt1 = MPI_Wtime();      
         if (pSPARC->npspin != 1) { // find min/max over processes with the same rank in spincomm
             MPI_Allreduce(MPI_IN_PLACE, &eigmin_g, 1, MPI_DOUBLE, MPI_MIN, pSPARC->spin_bridge_comm);
             MPI_Allreduce(MPI_IN_PLACE, &eigmax_g, 1, MPI_DOUBLE, MPI_MAX, pSPARC->spin_bridge_comm);
@@ -175,7 +186,11 @@ void eigSolve_CheFSI_kpt(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error
             MPI_Allreduce(MPI_IN_PLACE, &eigmin_g, 1, MPI_DOUBLE, MPI_MIN, pSPARC->kpt_bridge_comm);
             MPI_Allreduce(MPI_IN_PLACE, &eigmax_g, 1, MPI_DOUBLE, MPI_MAX, pSPARC->kpt_bridge_comm);
         }
-        
+        globt2 = MPI_Wtime();
+        if(!rank)
+            printf("All reduce global minimum and global maximum eigenvalue takes: %fms\n",(globt2-globt1)*1000);
+
+
         pSPARC->Efermi = Calculate_occupation(pSPARC, eigmin_g - 1, eigmax_g + 1, 1e-12, 100); 
         
         if (pSPARC->CyclixFlag) {

@@ -716,6 +716,73 @@ void scf_loop(SPARC_OBJ *pSPARC) {
             Calculate_Veff_loc_dmcomm_phi(pSPARC);
         }
 
+
+
+/***********************************************
+#ifdef DEBUG
+        int spin_maxocc = 0, k_maxocc = 0;
+        double maxocc = -1.0;
+        for (int spn_i = 0; spn_i < pSPARC->Nspin_spincomm; spn_i++){
+            for (int k = 0; k < Nk; k++) {
+                int ind = pSPARC->Nstates-1;
+                ind = max(ind,0);
+                double g_ind = pSPARC->occ_sorted[spn_i*Ns*Nk + k*Ns + ind];
+                
+                if (g_ind > maxocc) {
+                    maxocc = g_ind;
+                    spin_maxocc = spn_i;
+                    k_maxocc = k;
+                }
+
+                // #ifdef DEBUG
+                if(!rank) {
+                    int nocc_print = min(200,pSPARC->Nstates - pSPARC->Nelectron/2 + 10);
+                    nocc_print = min(nocc_print, pSPARC->Nstates);
+                    printf("The last %d occupations of kpoints #%d are (Nelectron = %d):\n", nocc_print, k+1, pSPARC->Nelectron);
+                    for (i = 0; i < nocc_print; i++) {
+                        printf("lambda[%4d] = %18.14f, occ[%4d] = %18.14f\n", 
+                                Ns - nocc_print + i + 1, 
+                                pSPARC->lambda_sorted[spn_i*Ns*Nk + k*Ns + Ns - nocc_print + i],
+                                Ns - nocc_print + i + 1, 
+                                (3.0-pSPARC->Nspin)/pSPARC->Nspinor * pSPARC->occ_sorted[spn_i*Ns*Nk + k*Ns + Ns - nocc_print + i]);
+                    }
+                }
+            }
+        }
+
+        // print occ(0.9*NSTATES)] and occ(NSTATES) in DEBUG mode (only for the k point that gives max occ)
+        spn_i = spin_maxocc;
+        k = k_maxocc;
+        if(!rank) {
+            double k1_red, k2_red, k3_red;
+            if (pSPARC->BC != 1) {
+                k1_red = pSPARC->k1_loc[k]*pSPARC->range_x/(2.0*M_PI);
+                k2_red = pSPARC->k2_loc[k]*pSPARC->range_y/(2.0*M_PI);
+                k3_red = pSPARC->k3_loc[k]*pSPARC->range_z/(2.0*M_PI);
+            } else {
+                k1_red = k2_red = k3_red = 0.0;
+            }
+            int ind_90percent = round(pSPARC->Nstates * 0.90) - 1;
+            int ind_100percent = pSPARC->Nstates - 1;
+            double g_ind_90percent = pSPARC->occ_sorted[spn_i*Ns*Nk + k*Ns + ind_90percent];
+            double g_ind_100percent = pSPARC->occ_sorted[spn_i*Ns*Nk + k*Ns + ind_100percent];
+            // write to .out file
+            if (pSPARC->BC != 1) printf("\nk = [%.3f, %.3f, %.3f]\n", k1_red, k2_red, k3_red);
+            printf("Occupation of state %d (90%%) = %.15f.\n"
+                "Occupation of state %d (100%%) = %.15f.\n",
+                ind_90percent+1, (3.0-pSPARC->Nspin)/pSPARC->Nspinor * g_ind_90percent,
+                ind_100percent+1, (3.0-pSPARC->Nspin)/pSPARC->Nspinor * g_ind_100percent);
+        }
+        #endif
+
+
+***********************************************/        
+
+
+
+
+
+
         if (pSPARC->MixingVariable == 1) { // potential mixing
             #ifdef DEBUG
             t1 = MPI_Wtime();

@@ -83,15 +83,14 @@ void Init_electronDensity(SPARC_OBJ *pSPARC) {
         int  i, DMnd;
         DMnd = pSPARC->Nd_d * (2*pSPARC->Nspin - 1);
         // for 1st Relax step/ MDstep, set electron density to be sum of atomic potentials
-        
-        //printf("Read dens = %lf",pSPARC->dens_rho[0]);
-        //sleep(3);
+       
        
         if (pSPARC->BandStr_Plot_Flag == 1)
         {
             read_dens(pSPARC);
-            printf("Read dens file!\n");
-            sleep(3);
+            if(rank==0)
+                printf("Read dens file!\n");
+       
             Distr_Dens(pSPARC);
         }    
 

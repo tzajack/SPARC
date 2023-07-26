@@ -1342,7 +1342,7 @@ void SPARC_copy_input(SPARC_OBJ *pSPARC, SPARC_INPUT_OBJ *pSPARC_Input) {
     if(pSPARC->rhoTrigger == -1)
     {
         if(pSPARC->BandStr_Plot_Flag == 1 )
-           pSPARC->rhoTrigger = 15;
+           pSPARC->rhoTrigger = 10;
         else
            pSPARC->rhoTrigger = 4;  
     }
@@ -1351,6 +1351,7 @@ void SPARC_copy_input(SPARC_OBJ *pSPARC, SPARC_INPUT_OBJ *pSPARC_Input) {
     {
         pSPARC->MAXIT_SCF = 1;
         pSPARC->MINIT_SCF = 1; 
+        pSPARC->PrintElecDensFlag = 0;
     } 
     
     
@@ -2243,8 +2244,9 @@ void SPARC_copy_input(SPARC_OBJ *pSPARC, SPARC_INPUT_OBJ *pSPARC_Input) {
         exit(EXIT_FAILURE);
     }
     
-    printf("BandStru plot flag = %d\n",pSPARC->BandStr_Plot_Flag);
-    sleep(3);
+    if(rank==0)
+        printf("BandStru plot flag = %d\n",pSPARC->BandStr_Plot_Flag);
+   
     if (pSPARC->BandStr_Plot_Flag == 1)
     {
     	pSPARC->Nkpts = pSPARC->kpt_per_line * pSPARC->kpt_line_num;
