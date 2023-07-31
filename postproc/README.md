@@ -1,7 +1,7 @@
 ## BandStrPlot requirements and usage
 ### (1) Brief:
 * BandStrPlot.py is a python script that reads `.eigen` file and plot the band structure of a given system.
-* Energy unit using is e.
+* Energy unit using is eV.
 * Resultant plot is stored with the file name `BandStructure.eps`.
 
 ### (2) Requriement Libraries of Python
