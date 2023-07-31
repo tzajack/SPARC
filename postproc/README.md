@@ -22,3 +22,5 @@ python BandStrPlot.py
 ```
 the resultant vector graph is saved as `BandStructure.eps`.
 
+### (4) Example
+* An example of CdS system can be found under the folder `Example`.
