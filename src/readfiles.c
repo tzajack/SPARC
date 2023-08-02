@@ -1024,25 +1024,36 @@ void read_dens(SPARC_OBJ *pSPARC){
     double x1,x2,x3;
     double y1,y2,y3;
     double z1,z2,z3;
-    char *celllen = malloc(L_STRING * sizeof(char));
+    char *useless = malloc(L_STRING * sizeof(char));
     while (!feof(dens_fp))
     {
         
         fscanf(dens_fp, "%*[^\n]\n");
-        fscanf(dens_fp,"%[^\n]", celllen);
-        //printf("%s\n", celllen);
+        fscanf(dens_fp,"%s", useless);
+        fscanf(dens_fp,"%s", useless);
+
+        
+        
+       //printf("Cellen is :         %s\n", celllen);
         double number1, number2, number3;
 
-        sscanf(celllen, "Cell length: %lf %lf %lf", &number1, &number2, &number3);
-        /*
+        fscanf(dens_fp, "%lf", &number1);
+        number2 = number1;
+        number3 = number1;
+
+        
         if(rank==0)
+        {
             printf("Xlen: %lf , Ylen: %lf , Zlen: %lf\n",number1, number2, number3);
-        */
+            //sleep(5);
+
+        }
+        fscanf(dens_fp, "%*[^\n]\n");
         fscanf(dens_fp, "%d", &n_atom);
-        /*
+       
         if(rank==0)
             printf("Num of atoms are: %d\n", n_atom);
-        */
+       
         
         fscanf(dens_fp, "%*[^\n]\n");
         fscanf(dens_fp, "%d", &cube_size_x);
@@ -1074,23 +1085,35 @@ void read_dens(SPARC_OBJ *pSPARC){
          double diffz = (cube_size_z*z1-pSPARC->latvec_scale_z*pSPARC->LatVec[6])*(cube_size_z*z1-pSPARC->latvec_scale_z*pSPARC->LatVec[6]) + (cube_size_z*z2-pSPARC->latvec_scale_z*pSPARC->LatVec[7])*(cube_size_z*z2-pSPARC->latvec_scale_z*pSPARC->LatVec[7]) + (cube_size_z*z3-pSPARC->latvec_scale_z*pSPARC->LatVec[8])*(cube_size_z*z3-pSPARC->latvec_scale_z*pSPARC->LatVec[8]);
         diffz = sqrt(diffz);
         //printf("diffx: %lf,diffy: %lf,diffz: %lf\n",diffx,diffy,diffz);
-        if(diffx > 1e-5 || diffy > 1e-5 || diffz > 1e-5)
+        if(diffx > 1e-1 || diffy > 1e-1 || diffz > 1e-1)
         {
             printf("Incorrect dens file!\n");
             MPI_Abort(MPI_COMM_WORLD,1);
         }
-        /*
+        
         if(rank ==0)
         {
             printf("x1:%lf, x2:%lf, x3:%lf\n",x1,x2,x3);
             printf("y1:%lf, y2:%lf, y3:%lf\n",y1,y2,y3);
             printf("z1:%lf, z2:%lf, z3:%lf\n",z1,z2,z3);
         }
-        */
+        
 
-       // printf("Cell len: %d, %d, %d\n", cube_size_x,cube_size_y,cube_size_z);
+        printf("Cell len: %d, %d, %d\n", cube_size_x,cube_size_y,cube_size_z);
+        
+        double uslss; 
         for(int i=0;i<n_atom;i++)
-            fscanf(dens_fp, "%*[^\n]\n");
+        {
+            fscanf(dens_fp, "%lf",&uslss);
+            fscanf(dens_fp, "%lf",&uslss);
+            fscanf(dens_fp, "%lf",&uslss);
+            fscanf(dens_fp, "%lf",&uslss);
+            fscanf(dens_fp, "%lf",&uslss);            
+        }
+
+        
+        
+        
         for (int i = 0; i < cube_size_x; i++) 
         {
             for (int j = 0; j < cube_size_y; j++) 
@@ -1101,6 +1124,8 @@ void read_dens(SPARC_OBJ *pSPARC){
                 }
             }
         }
+
+        printf("rho[0] = %lf\n", pSPARC->dens_rho[0]);
        /* 
        for (int i = 0; i < cube_size_x; i++)
        {
