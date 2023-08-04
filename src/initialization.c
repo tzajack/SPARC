@@ -2955,6 +2955,17 @@ void Calculate_kpoints(SPARC_OBJ *pSPARC) {
 }
 
 /**
+ * @brief   Calculate cross product of two vectors in R^3
+ *         
+ */
+void Cross_Product(double* x,double* y,double* z, double a1,double a2,double a3,double b1,double b2,double b3){
+    
+    *x = a2*b3-a3*b2;
+    *y = a3*b1-a1*b3;
+    *z = a1*b2-a2*b1;
+
+}
+/**
  * @brief   Calculate k-points for band structure plot.
  *          
  */
@@ -2965,93 +2976,129 @@ void Calculate_bandplot(SPARC_OBJ *pSPARC) {
 
 
     double k1,k2,k3;
-    //double Lx = pSPARC->latvec_scale_x;
-    //double Ly = pSPARC->latvec_scale_y;
-    //double Lz = pSPARC->latvec_scale_z;
-    double Lx = pSPARC->range_x;
-    double Ly = pSPARC->range_y;
-    double Lz = pSPARC->range_z;
+    double Lx = pSPARC->latvec_scale_x;
+    double Ly = pSPARC->latvec_scale_y;
+    double Lz = pSPARC->latvec_scale_z;
+    
+    
     int kppl = pSPARC->kpt_per_line;  
-           
+    
+    double a1_x = pSPARC->LatVec[0]*Lx;
+    double a1_y = pSPARC->LatVec[1]*Lx;
+    double a1_z = pSPARC->LatVec[2]*Lx;
+    
+    double a2_x = pSPARC->LatVec[3]*Ly;
+    double a2_y = pSPARC->LatVec[4]*Ly;
+    double a2_z = pSPARC->LatVec[5]*Ly;
+    
+    double a3_x = pSPARC->LatVec[6]*Lz;
+    double a3_y = pSPARC->LatVec[7]*Lz;
+    double a3_z = pSPARC->LatVec[8]*Lz;
+
+    double volume = 0.0;
+    double crossx,crossy,crossz;
+    Cross_Product(&crossx,&crossy,&crossz,a2_x,a2_y,a2_z,a3_x,a3_y,a3_z);
+    
+    volume = crossx*a1_x + crossy*a1_y + crossz*a1_z;
+    //Calculate b1
+    Cross_Product(&crossx,&crossy,&crossz,a2_x,a2_y,a2_z,a3_x,a3_y,a3_z);
+    double b1_x = 2.0*M_PI*crossx/(volume);
+    double b1_y = 2.0*M_PI*crossy/(volume);
+    double b1_z = 2.0*M_PI*crossz/(volume);
+    
+    //Calculate b2
+    Cross_Product(&crossx,&crossy,&crossz,a3_x,a3_y,a3_z,a1_x,a1_y,a1_z);
+    double b2_x = 2.0*M_PI*crossx/(volume);
+    double b2_y = 2.0*M_PI*crossy/(volume);
+    double b2_z = 2.0*M_PI*crossz/(volume);
+    
+    //Calculate b3
+    Cross_Product(&crossx,&crossy,&crossz,a1_x,a1_y,a1_z,a2_x,a2_y,a2_z);
+    double b3_x = 2.0*M_PI*crossx/(volume);
+    double b3_y = 2.0*M_PI*crossy/(volume);
+    double b3_z = 2.0*M_PI*crossz/(volume);
+
+    
+        
     for (int i=0;i<pSPARC->kpt_line_num*2;i++)
     {
-        //pSPARC->k1[i] = pSPARC->kredx[i]*b1_x + pSPARC->kredy[i]*b2_x + pSPARC->kredz[i]*b3_x;
-        //pSPARC->k2[i] = pSPARC->kredx[i]*b1_y + pSPARC->kredy[i]*b2_y + pSPARC->kredz[i]*b3_y;
-        //pSPARC->k3[i] = pSPARC->kredx[i]*b1_z + pSPARC->kredy[i]*b2_z + pSPARC->kredz[i]*b3_z;
-	    pSPARC->k1[i] = pSPARC->kredx[i]*(2.0*M_PI/Lx);
-        pSPARC->k2[i] = pSPARC->kredy[i]*(2.0*M_PI/Ly);
-        pSPARC->k3[i] = pSPARC->kredz[i]*(2.0*M_PI/Lz);
+        pSPARC->k1[i] = pSPARC->kredx[i]*b1_x + pSPARC->kredy[i]*b2_x + pSPARC->kredz[i]*b3_x;
+        pSPARC->k2[i] = pSPARC->kredx[i]*b1_y + pSPARC->kredy[i]*b2_y + pSPARC->kredz[i]*b3_y;
+        pSPARC->k3[i] = pSPARC->kredx[i]*b1_z + pSPARC->kredy[i]*b2_z + pSPARC->kredz[i]*b3_z;
         
         pSPARC->k1_inpt_kpt[i] = pSPARC->kredx[i];
-	    pSPARC->k2_inpt_kpt[i] = pSPARC->kredy[i];
-    	pSPARC->k3_inpt_kpt[i] = pSPARC->kredz[i];
-	    pSPARC->kptWts[i]= 1.0;
-	
+        pSPARC->k2_inpt_kpt[i] = pSPARC->kredy[i];
+        pSPARC->k3_inpt_kpt[i] = pSPARC->kredz[i];
+        pSPARC->kptWts[i]= 1.0;
+    
     }
-    	 
+         
      
     for (int i=0;i<pSPARC->kpt_line_num;i++)
     {
-	    int start_ind = i*kppl, end_ind = (i+1)*kppl-1;
-        //pSPARC->k1[start_ind] = pSPARC->kredx[i*2]*b1_x + pSPARC->kredy[i*2]*b2_x + pSPARC->kredz[i*2]*b3_x;
-        //pSPARC->k2[start_ind] = pSPARC->kredx[i*2]*b1_y + pSPARC->kredy[i*2]*b2_y + pSPARC->kredz[i*2]*b3_y;
-        //pSPARC->k3[start_ind] = pSPARC->kredx[i*2]*b1_z + pSPARC->kredy[i*2]*b2_z + pSPARC->kredz[i*2]*b3_z;
-        pSPARC->k1[start_ind] = pSPARC->kredx[i*2]*(2.0*M_PI/Lx);
-        pSPARC->k2[start_ind] = pSPARC->kredy[i*2]*(2.0*M_PI/Ly);
-        pSPARC->k3[start_ind] = pSPARC->kredz[i*2]*(2.0*M_PI/Lz);
+        int start_ind = i*kppl, end_ind = (i+1)*kppl-1;
+        pSPARC->k1[start_ind] = pSPARC->kredx[i*2]*b1_x + pSPARC->kredy[i*2]*b2_x + pSPARC->kredz[i*2]*b3_x;
+        pSPARC->k2[start_ind] = pSPARC->kredx[i*2]*b1_y + pSPARC->kredy[i*2]*b2_y + pSPARC->kredz[i*2]*b3_y;
+        pSPARC->k3[start_ind] = pSPARC->kredx[i*2]*b1_z + pSPARC->kredy[i*2]*b2_z + pSPARC->kredz[i*2]*b3_z;
+        
         
         
         pSPARC->k1_inpt_kpt[start_ind] = pSPARC->kredx[i*2];
         pSPARC->k2_inpt_kpt[start_ind] = pSPARC->kredy[i*2];
         pSPARC->k3_inpt_kpt[start_ind] = pSPARC->kredz[i*2];
-	    pSPARC->kptWts[start_ind]= 1.0;
+        pSPARC->kptWts[start_ind]= 1.0;
 
-	    //pSPARC->k1[end_ind] = pSPARC->kredx[i*2+1]*b1_x + pSPARC->kredy[i*2+1]*b2_x + pSPARC->kredz[i*2+1]*b3_x;
-        //pSPARC->k2[end_ind] = pSPARC->kredx[i*2+1]*b1_y + pSPARC->kredy[i*2+1]*b2_y + pSPARC->kredz[i*2+1]*b3_y;
-        //pSPARC->k3[end_ind] = pSPARC->kredx[i*2+1]*b1_z + pSPARC->kredy[i*2+1]*b2_z + pSPARC->kredz[i*2+1]*b3_z;
-        pSPARC->k1[end_ind] = pSPARC->kredx[i*2+1]*(2.0*M_PI/Lx);
-        pSPARC->k2[end_ind] = pSPARC->kredy[i*2+1]*(2.0*M_PI/Ly);
-        pSPARC->k3[end_ind] = pSPARC->kredz[i*2+1]*(2.0*M_PI/Lz);
-
+        pSPARC->k1[end_ind] = pSPARC->kredx[i*2+1]*b1_x + pSPARC->kredy[i*2+1]*b2_x + pSPARC->kredz[i*2+1]*b3_x;
+        pSPARC->k2[end_ind] = pSPARC->kredx[i*2+1]*b1_y + pSPARC->kredy[i*2+1]*b2_y + pSPARC->kredz[i*2+1]*b3_y;
+        pSPARC->k3[end_ind] = pSPARC->kredx[i*2+1]*b1_z + pSPARC->kredy[i*2+1]*b2_z + pSPARC->kredz[i*2+1]*b3_z;
+        
 
         
         pSPARC->k1_inpt_kpt[end_ind] = pSPARC->kredx[i*2+1];
         pSPARC->k2_inpt_kpt[end_ind] = pSPARC->kredy[i*2+1];
         pSPARC->k3_inpt_kpt[end_ind] = pSPARC->kredz[i*2+1];
-	    pSPARC->kptWts[end_ind]= 1.0;
-	    double alpha = 1.0/(kppl-1.0);
-	    double vec_x = pSPARC->kredx[i*2+1] - pSPARC->kredx[i*2];
-	    double vec_y = pSPARC->kredy[i*2+1] - pSPARC->kredy[i*2];
-	    double vec_z = pSPARC->kredz[i*2+1] - pSPARC->kredz[i*2];
-	    for (int j=start_ind+1;j<end_ind;j++)
-	    {
-		    double tmpx =  pSPARC->kredx[i*2] + vec_x * alpha * (j-start_ind);
-		    double tmpy =  pSPARC->kredy[i*2] + vec_y * alpha * (j-start_ind);
-		    double tmpz =  pSPARC->kredz[i*2] + vec_z * alpha * (j-start_ind);
-		    //pSPARC->k1[j] = tmpx*b1_x + tmpy*b2_x + tmpz*b3_x; 
-		    //pSPARC->k2[j] = tmpx*b1_y + tmpy*b2_y + tmpz*b3_y;
-		    //pSPARC->k3[j] = tmpx*b1_z + tmpy*b2_z + tmpz*b3_z;
-		    pSPARC->k1[j] = tmpx*(2.0*M_PI/Lx);
-            pSPARC->k2[j] = tmpy*(2.0*M_PI/Ly);
-            pSPARC->k3[j] = tmpz*(2.0*M_PI/Lz);
+        pSPARC->kptWts[end_ind]= 1.0;
+        double alpha = 1.0/(kppl-1.0);
+        double vec_x = pSPARC->kredx[i*2+1] - pSPARC->kredx[i*2];
+        double vec_y = pSPARC->kredy[i*2+1] - pSPARC->kredy[i*2];
+        double vec_z = pSPARC->kredz[i*2+1] - pSPARC->kredz[i*2];
+        for (int j=start_ind+1;j<end_ind;j++)
+        {
+            double tmpx =  pSPARC->kredx[i*2] + vec_x * alpha * (j-start_ind);
+            double tmpy =  pSPARC->kredy[i*2] + vec_y * alpha * (j-start_ind);
+            double tmpz =  pSPARC->kredz[i*2] + vec_z * alpha * (j-start_ind);
+            pSPARC->k1[j] = tmpx*b1_x + tmpy*b2_x + tmpz*b3_x; 
+            pSPARC->k2[j] = tmpx*b1_y + tmpy*b2_y + tmpz*b3_y;
+            pSPARC->k3[j] = tmpx*b1_z + tmpy*b2_z + tmpz*b3_z;
+            
             
             pSPARC->k1_inpt_kpt[j] = tmpx;
-       	    pSPARC->k2_inpt_kpt[j] = tmpy;
+            pSPARC->k2_inpt_kpt[j] = tmpy;
             pSPARC->k3_inpt_kpt[j] = tmpz;
-		    pSPARC->kptWts[j]= 1.0;
-	    }
+            pSPARC->kptWts[j]= 1.0;
+        }
 
     }
 
-#ifdef DEBUG 
+#ifdef DEBUG
+    if (!rank)
+    {
+        printf("Number of kpt = %d\n", pSPARC->Nkpts);
+        //printf("b1x: %8.4f, b1y: %8.4f, b1z: %8.4f\n",b1_x,b1_y,b1_z);
+        
+        //printf("b2x: %8.4f, b2y: %8.4f, b2z: %8.4f\n",b2_x,b2_y,b2_z);
+        //printf("b3x: %8.4f, b3y: %8.4f, b3z: %8.4f\n",b3_x,b3_y,b3_z);
+        printf("Volume = %lf\n",volume);
+    } 
     for (int nk = 0; nk < pSPARC->Nkpts; nk++)
     { 
         if (!rank) 
-		    printf("inpt k1[%2d]: %8.4f, k2[%2d]: %8.4f, k3[%2d]: %8.4f, kptwt[%2d]: %.3f \n",nk,pSPARC->k1_inpt_kpt[nk],nk,pSPARC->k2_inpt_kpt[nk],nk,pSPARC->k3_inpt_kpt[nk],nk,pSPARC->kptWts[nk]);
-		//printf("Volume = %lf\n",volume);
+            printf("inpt k1[%2d]: %8.4f, k2[%2d]: %8.4f, k3[%2d]: %8.4f, kptwt[%2d]: %.3f \n",nk,pSPARC->k1_inpt_kpt[nk],nk,pSPARC->k2_inpt_kpt[nk],nk,pSPARC->k3_inpt_kpt[nk],nk,pSPARC->kptWts[nk]);
+        //printf("Volume = %lf\n",volume);
     }
 #endif
 }
+
 
 
 
