@@ -774,7 +774,46 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
 	        for(int line=0;line<2*pSPARC_Input->kpt_line_num;line++)
                 printf("k-point %d coordinates: (%lf,%lf,%lf)\n",line,pSPARC_Input->kredx[line],pSPARC_Input->kredy[line],pSPARC_Input->kredz[line]);
             
-        } else {
+        }else if(strcmpi(str,"DENS_FILE_NAME:") == 0){
+            char fileNames[4096]; 
+            //fscanf(input_fp,"%s",fileNames);
+            //fscanf(input_fp, "%*[^\n]\n");
+          
+            fscanf(input_fp,"%d",&pSPARC_Input->densfilecount);
+            if(pSPARC_Input->densfilecount == 1)
+            {
+                fscanf(input_fp,"%[^\n]", str);
+                int check = sscanf(str,"%s",pSPARC_Input->densfilename_tot);
+                if(check != 1 || pSPARC_Input->densfilename_tot[0] == '#')
+                {
+                    printf(RED "ERROR: Please provide correct number of density file" RESET);
+                    exit(EXIT_FAILURE);
+                }
+            }
+            else if(pSPARC_Input->densfilecount == 3)
+            {
+                fscanf(input_fp,"%[^\n]", str);
+                int checkk = sscanf(str,"%s %s %s",pSPARC_Input->densfilename_tot,pSPARC_Input->densfilename_up,pSPARC_Input->densfilename_down);
+                if(checkk != 3 || pSPARC_Input->densfilename_up[0] == '#' ||  pSPARC_Input->densfilename_down[0] == '#')
+                {
+                    printf(RED "ERROR: Please provide correct number of density file" RESET);
+                    exit(EXIT_FAILURE);
+                } 
+            
+            
+            
+            }
+            fscanf(input_fp, "%*[^\n]\n"); 
+            printf("There are %d number of files\n",pSPARC_Input->densfilecount);
+            printf("Total Dens file name:%s\n", pSPARC_Input->densfilename_tot);
+            printf("Up Dens file name:%s\n", pSPARC_Input->densfilename_up);
+            printf("down Dens file name:%s\n", pSPARC_Input->densfilename_down);
+            //printf("Dens file name:%s\n", fileNames);
+            sleep(5);
+        
+        } 
+        
+        else {
             printf("\nCannot recognize input variable identifier: \"%s\"\n",str);
             exit(EXIT_FAILURE);
         }
@@ -1000,10 +1039,29 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
 
 
 
-void read_dens(SPARC_OBJ *pSPARC){
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void read_dens(SPARC_OBJ *pSPARC, int spintype){
     char *dens_filename = malloc(L_STRING * sizeof(char));
     char *str           = malloc(L_STRING * sizeof(char));
-    snprintf(dens_filename, L_STRING, "%s.dens", pSPARC->filename);
+    if(spintype == 1)
+        snprintf(dens_filename, L_STRING, "%s", pSPARC->densfilename_tot);
+    else if(spintype == 2)
+        snprintf(dens_filename, L_STRING, "%s", pSPARC->densfilename_up);
+    else
+        snprintf(dens_filename, L_STRING, "%s", pSPARC->densfilename_down);
 
     FILE *dens_fp = fopen(dens_filename, "r");
 
@@ -1016,10 +1074,10 @@ void read_dens(SPARC_OBJ *pSPARC){
     }
 
 #ifdef DEBUG
-   // printf("Reading dens file %s\n",dens_filename);
+    printf("Reading dens file %s\n",dens_filename);
 #endif 
     int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int n_atom,cube_size_x,cube_size_y,cube_size_z;
     double x1,x2,x3;
     double y1,y2,y3;
@@ -1042,17 +1100,17 @@ void read_dens(SPARC_OBJ *pSPARC){
         number3 = number1;
 
         
-        if(rank==0)
-        {
-            printf("Xlen: %lf , Ylen: %lf , Zlen: %lf\n",number1, number2, number3);
+        //if(rank==0)
+        
+          //  printf("Xlen: %lf , Ylen: %lf , Zlen: %lf\n",number1, number2, number3);
             //sleep(5);
 
-        }
+        
         fscanf(dens_fp, "%*[^\n]\n");
         fscanf(dens_fp, "%d", &n_atom);
        
-        if(rank==0)
-            printf("Num of atoms are: %d\n", n_atom);
+        //if(rank==0)
+          //  printf("Num of atoms are: %d\n", n_atom);
        
         
         fscanf(dens_fp, "%*[^\n]\n");
@@ -1091,15 +1149,15 @@ void read_dens(SPARC_OBJ *pSPARC){
             MPI_Abort(MPI_COMM_WORLD,1);
         }
         
-        if(rank ==0)
-        {
-            printf("x1:%lf, x2:%lf, x3:%lf\n",x1,x2,x3);
-            printf("y1:%lf, y2:%lf, y3:%lf\n",y1,y2,y3);
-            printf("z1:%lf, z2:%lf, z3:%lf\n",z1,z2,z3);
-        }
+        //if(rank ==0)
+        //{
+        //    printf("x1:%lf, x2:%lf, x3:%lf\n",x1,x2,x3);
+        //    printf("y1:%lf, y2:%lf, y3:%lf\n",y1,y2,y3);
+        //    printf("z1:%lf, z2:%lf, z3:%lf\n",z1,z2,z3);
+       // }
         
 
-        printf("Cell len: %d, %d, %d\n", cube_size_x,cube_size_y,cube_size_z);
+       // printf("Cell len: %d, %d, %d\n", cube_size_x,cube_size_y,cube_size_z);
         
         double uslss; 
         for(int i=0;i<n_atom;i++)
@@ -1120,12 +1178,17 @@ void read_dens(SPARC_OBJ *pSPARC){
             {
                 for (int k = 0; k < cube_size_z; k++) 
                 {
-                    fscanf(dens_fp, "%lf", &pSPARC->dens_rho[(i)+(j)*cube_size_x+(k)*cube_size_x*cube_size_y]);
+                    if(spintype == 1)
+                        fscanf(dens_fp, "%lf", &pSPARC->dens_rho[(i)+(j)*cube_size_x+(k)*cube_size_x*cube_size_y]);
+                    else if(spintype == 2)
+                        fscanf(dens_fp, "%lf", &pSPARC->dens_rho_up[(i)+(j)*cube_size_x+(k)*cube_size_x*cube_size_y]);
+                    else
+                        fscanf(dens_fp, "%lf", &pSPARC->dens_rho_dwn[(i)+(j)*cube_size_x+(k)*cube_size_x*cube_size_y]);
                 }
             }
         }
 
-        printf("rho[0] = %lf\n", pSPARC->dens_rho[0]);
+        //printf("rho[0] = %lf\n", pSPARC->dens_rho[0]);
        /* 
        for (int i = 0; i < cube_size_x; i++)
        {
