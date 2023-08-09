@@ -102,9 +102,9 @@ void printElecDens(SPARC_OBJ *pSPARC) {
             rho, pSPARC->dmcomm_phi, sdims, recv_comm, rdims, pSPARC->dmcomm_phi);
         
         if (pSPARC->Nspin > 1) { // send rho_up, rho_down
-            D2D(&d2d_sender, &d2d_recvr, gridsizes, pSPARC->DMVertices, pSPARC->rho_dmcomm_phi_in+DMnd, rDMVert, 
+            D2D(&d2d_sender, &d2d_recvr, gridsizes, pSPARC->DMVertices, pSPARC->electronDens+DMnd, rDMVert, 
                 rho+Nd, pSPARC->dmcomm_phi, sdims, recv_comm, rdims, pSPARC->dmcomm_phi);
-            D2D(&d2d_sender, &d2d_recvr, gridsizes, pSPARC->DMVertices, pSPARC->rho_dmcomm_phi_in+2*DMnd, rDMVert, 
+            D2D(&d2d_sender, &d2d_recvr, gridsizes, pSPARC->DMVertices, pSPARC->electronDens+2*DMnd, rDMVert, 
                 rho+2*Nd, pSPARC->dmcomm_phi, sdims, recv_comm, rdims, pSPARC->dmcomm_phi);
         }
 
@@ -202,7 +202,7 @@ void printDens_cube(SPARC_OBJ *pSPARC, double *rho, char *fname, char *rhoname) 
     for (i = 0; i < Nx; i++) {
         for (j = 0; j < Ny; j++) {
             for (k = 0; k < Nz; k++) {
-                fprintf(output_fp, "  %.13E", rho(i,j,k));
+                fprintf(output_fp, "  %.6E", rho(i,j,k));
                 if (k % 6 == 5)
                     fprintf(output_fp, "\n");
             }
@@ -466,15 +466,36 @@ void printEigen(SPARC_OBJ *pSPARC) {
                     int Nk_Kcomm_indx = Nk_i[Kcomm_indx];
                     for (k = 0; k < Nk_Kcomm_indx; k++) {
                         int kred_index = kpt_displs[Kcomm_indx]/3+k+1;
-                        fprintf(output_fp,
+                        
+                        if (pSPARC->BandStr_Plot_Flag == 1)
+                        {
+                            fprintf(output_fp,
+                                    "\n"
+                                    "kred #%d = (%f,%f,%f)\n"
+                                    "                       Spin-up                                    Spin-down\n"
+                                    "n        eigval                 occ                 eigval                 occ\n",
+                                    kred_index,
+                                    pSPARC->k1_inpt_kpt[kred_index-1],
+                                    pSPARC->k2_inpt_kpt[kred_index-1],
+                                    pSPARC->k3_inpt_kpt[kred_index-1]);
+                        }
+                        else
+                        {
+                            fprintf(output_fp,
                                 "\n"
                                 "kred #%d = (%f,%f,%f)\n"
-                                "                       Spin-up                                    Spin-down\n"
-                                "n        eigval                 occ                 eigval                 occ\n",
+                                    "                       Spin-up                                    Spin-down\n"
+                                    "n        eigval                 occ                 eigval                 occ\n",
                                 kred_index,
-                                kred_i[kpt_displs[Kcomm_indx]+3*k], 
-                                kred_i[kpt_displs[Kcomm_indx]+3*k+1], 
+                                kred_i[kpt_displs[Kcomm_indx]+3*k],
+                                kred_i[kpt_displs[Kcomm_indx]+3*k+1],
                                 kred_i[kpt_displs[Kcomm_indx]+3*k+2]);
+                        }
+
+
+
+
+
                         for (i = 0; i < pSPARC->Nstates; i++) {
                             fprintf(output_fp, "%-7d%20.12E %18.12f    %20.12E %18.12f\n", 
                                 i+1,

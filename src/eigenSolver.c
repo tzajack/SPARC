@@ -205,6 +205,17 @@ void eigSolve_CheFSI(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error) {
         // 1) Find Chebyshev filtering bounds
         // 2) Chebyshev filtering,          3) Projection, 
         // 4) Solve projected eigenproblem, 5) Subspace rotation
+        if(!rank)
+        {
+            for(int  i=0;i<5;i++)
+                printf("Total rho[%d] = %.10f \n",i,pSPARC->electronDens[i]);
+            for(int  i=0;i<5;i++)
+                printf("Up rho[%d] = %.10f \n",i,pSPARC->electronDens[i+pSPARC->Nd_d]);
+            for(int  i=0;i<5;i++)
+                printf("Down rho[%d] = %.10f \n",i,pSPARC->electronDens[i+2*pSPARC->Nd_d]);
+        }
+
+       
         for (spn_i = 0; spn_i < pSPARC->Nspin_spincomm; spn_i++)
             CheFSI(pSPARC, lambda_cutoff, x0, count, 0, spn_i);
         
@@ -800,7 +811,7 @@ void ChebyshevFiltering(
 
     t1 = MPI_Wtime();
     // find Y = (H - c*I)X
-    int sg  = pSPARC->spin_start_indx + spn_i;
+    int sg  = pSPARC->spin_start_indx + spn_i; 
     Hamiltonian_vectors_mult(
         pSPARC, DMnd, DMVertices, pSPARC->Veff_loc_dmcomm + sg * pSPARC->Nd_d_dmcomm, 
         pSPARC->Atom_Influence_nloc, pSPARC->nlocProj, ncol, -c, X, Y, spn_i, comm

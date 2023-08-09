@@ -44,7 +44,169 @@
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
 
-#define N_MEMBR 169
+#define N_MEMBR 173
+
+
+/**
+ * @brief   Calculate cross product of two vectors in R^3
+ *         
+ */
+void Cross_Product(double* x,double* y,double* z, double a1,double a2,double a3,double b1,double b2,double b3){
+    
+    *x = a2*b3-a3*b2;
+    *y = a3*b1-a1*b3;
+    *z = a1*b2-a2*b1;
+
+}
+/**
+ * @brief   Calculate k-points for band structure plot.
+ *          
+ */
+void Calculate_bandplot(SPARC_OBJ *pSPARC) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   
+
+
+    double k1,k2,k3;
+    double Lx = pSPARC->latvec_scale_x;
+    double Ly = pSPARC->latvec_scale_y;
+    double Lz = pSPARC->latvec_scale_z;
+    
+    
+    int kppl = pSPARC->kpt_per_line;  
+    
+    double a1_x = pSPARC->LatVec[0]*Lx;
+    double a1_y = pSPARC->LatVec[1]*Lx;
+    double a1_z = pSPARC->LatVec[2]*Lx;
+    
+    double a2_x = pSPARC->LatVec[3]*Ly;
+    double a2_y = pSPARC->LatVec[4]*Ly;
+    double a2_z = pSPARC->LatVec[5]*Ly;
+    
+    double a3_x = pSPARC->LatVec[6]*Lz;
+    double a3_y = pSPARC->LatVec[7]*Lz;
+    double a3_z = pSPARC->LatVec[8]*Lz;
+
+    double volume = 0.0;
+    double crossx,crossy,crossz;
+    Cross_Product(&crossx,&crossy,&crossz,a2_x,a2_y,a2_z,a3_x,a3_y,a3_z);
+    
+    volume = crossx*a1_x + crossy*a1_y + crossz*a1_z;
+    //Calculate b1
+    Cross_Product(&crossx,&crossy,&crossz,a2_x,a2_y,a2_z,a3_x,a3_y,a3_z);
+    double b1_x = 2.0*M_PI*crossx/(volume);
+    double b1_y = 2.0*M_PI*crossy/(volume);
+    double b1_z = 2.0*M_PI*crossz/(volume);
+    
+    //Calculate b2
+    Cross_Product(&crossx,&crossy,&crossz,a3_x,a3_y,a3_z,a1_x,a1_y,a1_z);
+    double b2_x = 2.0*M_PI*crossx/(volume);
+    double b2_y = 2.0*M_PI*crossy/(volume);
+    double b2_z = 2.0*M_PI*crossz/(volume);
+    
+    //Calculate b3
+    Cross_Product(&crossx,&crossy,&crossz,a1_x,a1_y,a1_z,a2_x,a2_y,a2_z);
+    double b3_x = 2.0*M_PI*crossx/(volume);
+    double b3_y = 2.0*M_PI*crossy/(volume);
+    double b3_z = 2.0*M_PI*crossz/(volume);
+
+    
+        
+    for (int i=0;i<pSPARC->kpt_line_num*2;i++)
+    {
+        pSPARC->k1[i] = pSPARC->kredx[i]*b1_x + pSPARC->kredy[i]*b2_x + pSPARC->kredz[i]*b3_x;
+        pSPARC->k2[i] = pSPARC->kredx[i]*b1_y + pSPARC->kredy[i]*b2_y + pSPARC->kredz[i]*b3_y;
+        pSPARC->k3[i] = pSPARC->kredx[i]*b1_z + pSPARC->kredy[i]*b2_z + pSPARC->kredz[i]*b3_z;
+        
+        pSPARC->k1_inpt_kpt[i] = pSPARC->kredx[i];
+        pSPARC->k2_inpt_kpt[i] = pSPARC->kredy[i];
+        pSPARC->k3_inpt_kpt[i] = pSPARC->kredz[i];
+        pSPARC->kptWts[i]= 1.0;
+    
+    }
+         
+     
+    for (int i=0;i<pSPARC->kpt_line_num;i++)
+    {
+        int start_ind = i*kppl, end_ind = (i+1)*kppl-1;
+        pSPARC->k1[start_ind] = pSPARC->kredx[i*2]*b1_x + pSPARC->kredy[i*2]*b2_x + pSPARC->kredz[i*2]*b3_x;
+        pSPARC->k2[start_ind] = pSPARC->kredx[i*2]*b1_y + pSPARC->kredy[i*2]*b2_y + pSPARC->kredz[i*2]*b3_y;
+        pSPARC->k3[start_ind] = pSPARC->kredx[i*2]*b1_z + pSPARC->kredy[i*2]*b2_z + pSPARC->kredz[i*2]*b3_z;
+        
+        
+        
+        pSPARC->k1_inpt_kpt[start_ind] = pSPARC->kredx[i*2];
+        pSPARC->k2_inpt_kpt[start_ind] = pSPARC->kredy[i*2];
+        pSPARC->k3_inpt_kpt[start_ind] = pSPARC->kredz[i*2];
+        pSPARC->kptWts[start_ind]= 1.0;
+
+        pSPARC->k1[end_ind] = pSPARC->kredx[i*2+1]*b1_x + pSPARC->kredy[i*2+1]*b2_x + pSPARC->kredz[i*2+1]*b3_x;
+        pSPARC->k2[end_ind] = pSPARC->kredx[i*2+1]*b1_y + pSPARC->kredy[i*2+1]*b2_y + pSPARC->kredz[i*2+1]*b3_y;
+        pSPARC->k3[end_ind] = pSPARC->kredx[i*2+1]*b1_z + pSPARC->kredy[i*2+1]*b2_z + pSPARC->kredz[i*2+1]*b3_z;
+        
+
+        
+        pSPARC->k1_inpt_kpt[end_ind] = pSPARC->kredx[i*2+1];
+        pSPARC->k2_inpt_kpt[end_ind] = pSPARC->kredy[i*2+1];
+        pSPARC->k3_inpt_kpt[end_ind] = pSPARC->kredz[i*2+1];
+        pSPARC->kptWts[end_ind]= 1.0;
+        double alpha = 1.0/(kppl-1.0);
+        double vec_x = pSPARC->kredx[i*2+1] - pSPARC->kredx[i*2];
+        double vec_y = pSPARC->kredy[i*2+1] - pSPARC->kredy[i*2];
+        double vec_z = pSPARC->kredz[i*2+1] - pSPARC->kredz[i*2];
+        for (int j=start_ind+1;j<end_ind;j++)
+        {
+            double tmpx =  pSPARC->kredx[i*2] + vec_x * alpha * (j-start_ind);
+            double tmpy =  pSPARC->kredy[i*2] + vec_y * alpha * (j-start_ind);
+            double tmpz =  pSPARC->kredz[i*2] + vec_z * alpha * (j-start_ind);
+            pSPARC->k1[j] = tmpx*b1_x + tmpy*b2_x + tmpz*b3_x; 
+            pSPARC->k2[j] = tmpx*b1_y + tmpy*b2_y + tmpz*b3_y;
+            pSPARC->k3[j] = tmpx*b1_z + tmpy*b2_z + tmpz*b3_z;
+            
+            
+            pSPARC->k1_inpt_kpt[j] = tmpx;
+            pSPARC->k2_inpt_kpt[j] = tmpy;
+            pSPARC->k3_inpt_kpt[j] = tmpz;
+            pSPARC->kptWts[j]= 1.0;
+        }
+
+    }
+
+#ifdef DEBUG
+    if (!rank)
+    {
+        printf("Number of kpt = %d\n", pSPARC->Nkpts);
+        //printf("b1x: %8.4f, b1y: %8.4f, b1z: %8.4f\n",b1_x,b1_y,b1_z);
+        
+        //printf("b2x: %8.4f, b2y: %8.4f, b2z: %8.4f\n",b2_x,b2_y,b2_z);
+        //printf("b3x: %8.4f, b3y: %8.4f, b3z: %8.4f\n",b3_x,b3_y,b3_z);
+        printf("Volume = %lf\n",volume);
+    } 
+    for (int nk = 0; nk < pSPARC->Nkpts; nk++)
+    { 
+        if (!rank) 
+            printf("inpt k1[%2d]: %8.4f, k2[%2d]: %8.4f, k3[%2d]: %8.4f, kptwt[%2d]: %.3f \n",nk,pSPARC->k1_inpt_kpt[nk],nk,pSPARC->k2_inpt_kpt[nk],nk,pSPARC->k3_inpt_kpt[nk],nk,pSPARC->kptWts[nk]);
+        //printf("Volume = %lf\n",volume);
+    }
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -191,24 +353,7 @@ void Initialize(SPARC_OBJ *pSPARC, int argc, char *argv[]) {
         // broadcast Ntypes read from ion file
         MPI_Ibcast(&pSPARC->Ntypes, 1, MPI_INT, 0, MPI_COMM_WORLD, &req);
     }
-/*
-    printf("Band plot flag = %d\n",pSPARC->BandStr_Plot_Flag);    
-    sleep(3);
-    if (pSPARC->BandStr_Plot_Flag == 1)
-    {
-#ifdef DEBUG
-        t1 = MPI_Wtime();
-#endif 
-        
-        read_dens(pSPARC); //read dens file
 
-#ifdef DEBUG
-        t2 = MPI_Wtime();
-        printf("Read dens = %lf\n",pSPARC->dens_rho[0]);
-        printf("\nReading density file took %.3f ms\n",(t2-t1)*1000);
-     }
-#endif 
-*/
 
 
 #ifdef DEBUG
@@ -453,7 +598,9 @@ void set_defaults(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
     memset(pSPARC_Input->MDMeth,       '\0', sizeof(pSPARC_Input->MDMeth));
     memset(pSPARC_Input->RelaxMeth,    '\0', sizeof(pSPARC_Input->RelaxMeth));
     memset(pSPARC_Input->XC,           '\0', sizeof(pSPARC_Input->XC));
-
+    memset(pSPARC_Input->densfilename_tot,           '\0', sizeof(pSPARC_Input->densfilename_tot));
+    memset(pSPARC_Input->densfilename_up,           '\0', sizeof(pSPARC_Input->densfilename_up));
+    memset(pSPARC_Input->densfilename_down,           '\0', sizeof(pSPARC_Input->densfilename_down));
     /* default file names (unless otherwise supplied) */
     snprintf(pSPARC_Input->filename_out, L_STRING, "%s", pSPARC_Input->filename);
     snprintf(pSPARC_Input->SPARCROOT, L_STRING, "%s", "UNDEFINED");
@@ -581,7 +728,7 @@ void set_defaults(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
     pSPARC_Input->CheFSI_Optmz = 0;           // default is off
     pSPARC_Input->chefsibound_flag = 0;       // default is to find bound using Lanczos on H in the first SCF of each MD/Relax only
     pSPARC_Input->rhoTrigger = -1;              // default step to start updating electron density, later will be subtracted by 1
-
+    pSPARC_Input->BandStr_Plot_Flag = 0;
     /* default smearing */
     pSPARC_Input->elec_T_type = 1;            // default smearing type: 1 - gaussian smearing (the other option is 0 - fermi-dirac)
 
@@ -1150,12 +1297,16 @@ void SPARC_copy_input(SPARC_OBJ *pSPARC, SPARC_INPUT_OBJ *pSPARC_Input) {
     pSPARC->BandStr_Plot_Flag = pSPARC_Input->BandStr_Plot_Flag;
     pSPARC->kpt_line_num = pSPARC_Input->kpt_line_num;
     pSPARC->kpt_per_line = pSPARC_Input->kpt_per_line;
+    if(pSPARC->BandStr_Plot_Flag == 1)
+    {
     for(int i=0;i<pSPARC->kpt_line_num*2;i++)
     {
         pSPARC->kredx[i] = pSPARC_Input->kredx[i];
 	pSPARC->kredy[i] = pSPARC_Input->kredy[i];
 	pSPARC->kredz[i] = pSPARC_Input->kredz[i];
     }
+    }
+    pSPARC->densfilecount = pSPARC_Input->densfilecount;
     // double type values
     pSPARC->range_x = pSPARC_Input->range_x;
     pSPARC->range_y = pSPARC_Input->range_y;
@@ -1242,7 +1393,24 @@ void SPARC_copy_input(SPARC_OBJ *pSPARC, SPARC_INPUT_OBJ *pSPARC_Input) {
     strncpy(pSPARC->filename , pSPARC_Input->filename,sizeof(pSPARC->filename));
     strncpy(pSPARC->filename_out , pSPARC_Input->filename_out,sizeof(pSPARC->filename_out));
     strncpy(pSPARC->SPARCROOT , pSPARC_Input->SPARCROOT,sizeof(pSPARC->SPARCROOT));
+    strncpy(pSPARC->densfilename_tot, pSPARC_Input->densfilename_tot,sizeof(pSPARC->densfilename_tot));
+     
+    strncpy(pSPARC->densfilename_up, pSPARC_Input->densfilename_up,sizeof(pSPARC->densfilename_up));
+    strncpy(pSPARC->densfilename_down, pSPARC_Input->densfilename_down,sizeof(pSPARC->densfilename_down));
 
+    if(pSPARC->BandStr_Plot_Flag == 1)
+    {
+        if(pSPARC->densfilecount != 3 && pSPARC->spin_typ == 1)
+        {       
+            printf("Please provide 3 files for band structure with spin polarization!\n");
+            exit(EXIT_FAILURE);
+        }
+        else if(pSPARC->densfilecount != 1 && pSPARC->spin_typ == 0)
+        {
+            printf("Please provide 1 density file for band structure without spin polarization!\n");
+            exit(EXIT_FAILURE); 
+        }
+    }
     // find exchange correltaion decomposition
     xc_decomposition(pSPARC);
 
@@ -2954,150 +3122,8 @@ void Calculate_kpoints(SPARC_OBJ *pSPARC) {
 #endif
 }
 
-/**
- * @brief   Calculate cross product of two vectors in R^3
- *         
- */
-void Cross_Product(double* x,double* y,double* z, double a1,double a2,double a3,double b1,double b2,double b3){
-    
-    *x = a2*b3-a3*b2;
-    *y = a3*b1-a1*b3;
-    *z = a1*b2-a2*b1;
-
-}
-/**
- * @brief   Calculate k-points for band structure plot.
- *          
- */
-void Calculate_bandplot(SPARC_OBJ *pSPARC) {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-   
 
 
-    double k1,k2,k3;
-    double Lx = pSPARC->latvec_scale_x;
-    double Ly = pSPARC->latvec_scale_y;
-    double Lz = pSPARC->latvec_scale_z;
-    
-    
-    int kppl = pSPARC->kpt_per_line;  
-    
-    double a1_x = pSPARC->LatVec[0]*Lx;
-    double a1_y = pSPARC->LatVec[1]*Lx;
-    double a1_z = pSPARC->LatVec[2]*Lx;
-    
-    double a2_x = pSPARC->LatVec[3]*Ly;
-    double a2_y = pSPARC->LatVec[4]*Ly;
-    double a2_z = pSPARC->LatVec[5]*Ly;
-    
-    double a3_x = pSPARC->LatVec[6]*Lz;
-    double a3_y = pSPARC->LatVec[7]*Lz;
-    double a3_z = pSPARC->LatVec[8]*Lz;
-
-    double volume = 0.0;
-    double crossx,crossy,crossz;
-    Cross_Product(&crossx,&crossy,&crossz,a2_x,a2_y,a2_z,a3_x,a3_y,a3_z);
-    
-    volume = crossx*a1_x + crossy*a1_y + crossz*a1_z;
-    //Calculate b1
-    Cross_Product(&crossx,&crossy,&crossz,a2_x,a2_y,a2_z,a3_x,a3_y,a3_z);
-    double b1_x = 2.0*M_PI*crossx/(volume);
-    double b1_y = 2.0*M_PI*crossy/(volume);
-    double b1_z = 2.0*M_PI*crossz/(volume);
-    
-    //Calculate b2
-    Cross_Product(&crossx,&crossy,&crossz,a3_x,a3_y,a3_z,a1_x,a1_y,a1_z);
-    double b2_x = 2.0*M_PI*crossx/(volume);
-    double b2_y = 2.0*M_PI*crossy/(volume);
-    double b2_z = 2.0*M_PI*crossz/(volume);
-    
-    //Calculate b3
-    Cross_Product(&crossx,&crossy,&crossz,a1_x,a1_y,a1_z,a2_x,a2_y,a2_z);
-    double b3_x = 2.0*M_PI*crossx/(volume);
-    double b3_y = 2.0*M_PI*crossy/(volume);
-    double b3_z = 2.0*M_PI*crossz/(volume);
-
-    
-        
-    for (int i=0;i<pSPARC->kpt_line_num*2;i++)
-    {
-        pSPARC->k1[i] = pSPARC->kredx[i]*b1_x + pSPARC->kredy[i]*b2_x + pSPARC->kredz[i]*b3_x;
-        pSPARC->k2[i] = pSPARC->kredx[i]*b1_y + pSPARC->kredy[i]*b2_y + pSPARC->kredz[i]*b3_y;
-        pSPARC->k3[i] = pSPARC->kredx[i]*b1_z + pSPARC->kredy[i]*b2_z + pSPARC->kredz[i]*b3_z;
-        
-        pSPARC->k1_inpt_kpt[i] = pSPARC->kredx[i];
-        pSPARC->k2_inpt_kpt[i] = pSPARC->kredy[i];
-        pSPARC->k3_inpt_kpt[i] = pSPARC->kredz[i];
-        pSPARC->kptWts[i]= 1.0;
-    
-    }
-         
-     
-    for (int i=0;i<pSPARC->kpt_line_num;i++)
-    {
-        int start_ind = i*kppl, end_ind = (i+1)*kppl-1;
-        pSPARC->k1[start_ind] = pSPARC->kredx[i*2]*b1_x + pSPARC->kredy[i*2]*b2_x + pSPARC->kredz[i*2]*b3_x;
-        pSPARC->k2[start_ind] = pSPARC->kredx[i*2]*b1_y + pSPARC->kredy[i*2]*b2_y + pSPARC->kredz[i*2]*b3_y;
-        pSPARC->k3[start_ind] = pSPARC->kredx[i*2]*b1_z + pSPARC->kredy[i*2]*b2_z + pSPARC->kredz[i*2]*b3_z;
-        
-        
-        
-        pSPARC->k1_inpt_kpt[start_ind] = pSPARC->kredx[i*2];
-        pSPARC->k2_inpt_kpt[start_ind] = pSPARC->kredy[i*2];
-        pSPARC->k3_inpt_kpt[start_ind] = pSPARC->kredz[i*2];
-        pSPARC->kptWts[start_ind]= 1.0;
-
-        pSPARC->k1[end_ind] = pSPARC->kredx[i*2+1]*b1_x + pSPARC->kredy[i*2+1]*b2_x + pSPARC->kredz[i*2+1]*b3_x;
-        pSPARC->k2[end_ind] = pSPARC->kredx[i*2+1]*b1_y + pSPARC->kredy[i*2+1]*b2_y + pSPARC->kredz[i*2+1]*b3_y;
-        pSPARC->k3[end_ind] = pSPARC->kredx[i*2+1]*b1_z + pSPARC->kredy[i*2+1]*b2_z + pSPARC->kredz[i*2+1]*b3_z;
-        
-
-        
-        pSPARC->k1_inpt_kpt[end_ind] = pSPARC->kredx[i*2+1];
-        pSPARC->k2_inpt_kpt[end_ind] = pSPARC->kredy[i*2+1];
-        pSPARC->k3_inpt_kpt[end_ind] = pSPARC->kredz[i*2+1];
-        pSPARC->kptWts[end_ind]= 1.0;
-        double alpha = 1.0/(kppl-1.0);
-        double vec_x = pSPARC->kredx[i*2+1] - pSPARC->kredx[i*2];
-        double vec_y = pSPARC->kredy[i*2+1] - pSPARC->kredy[i*2];
-        double vec_z = pSPARC->kredz[i*2+1] - pSPARC->kredz[i*2];
-        for (int j=start_ind+1;j<end_ind;j++)
-        {
-            double tmpx =  pSPARC->kredx[i*2] + vec_x * alpha * (j-start_ind);
-            double tmpy =  pSPARC->kredy[i*2] + vec_y * alpha * (j-start_ind);
-            double tmpz =  pSPARC->kredz[i*2] + vec_z * alpha * (j-start_ind);
-            pSPARC->k1[j] = tmpx*b1_x + tmpy*b2_x + tmpz*b3_x; 
-            pSPARC->k2[j] = tmpx*b1_y + tmpy*b2_y + tmpz*b3_y;
-            pSPARC->k3[j] = tmpx*b1_z + tmpy*b2_z + tmpz*b3_z;
-            
-            
-            pSPARC->k1_inpt_kpt[j] = tmpx;
-            pSPARC->k2_inpt_kpt[j] = tmpy;
-            pSPARC->k3_inpt_kpt[j] = tmpz;
-            pSPARC->kptWts[j]= 1.0;
-        }
-
-    }
-
-#ifdef DEBUG
-    if (!rank)
-    {
-        printf("Number of kpt = %d\n", pSPARC->Nkpts);
-        //printf("b1x: %8.4f, b1y: %8.4f, b1z: %8.4f\n",b1_x,b1_y,b1_z);
-        
-        //printf("b2x: %8.4f, b2y: %8.4f, b2z: %8.4f\n",b2_x,b2_y,b2_z);
-        //printf("b3x: %8.4f, b3y: %8.4f, b3z: %8.4f\n",b3_x,b3_y,b3_z);
-        printf("Volume = %lf\n",volume);
-    } 
-    for (int nk = 0; nk < pSPARC->Nkpts; nk++)
-    { 
-        if (!rank) 
-            printf("inpt k1[%2d]: %8.4f, k2[%2d]: %8.4f, k3[%2d]: %8.4f, kptwt[%2d]: %.3f \n",nk,pSPARC->k1_inpt_kpt[nk],nk,pSPARC->k2_inpt_kpt[nk],nk,pSPARC->k3_inpt_kpt[nk],nk,pSPARC->kptWts[nk]);
-        //printf("Volume = %lf\n",volume);
-    }
-#endif
-}
 
 
 
@@ -3891,7 +3917,7 @@ void SPARC_Input_MPI_create(MPI_Datatype *pSPARC_INPUT_MPI) {
                                          MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, 
                                          MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, 
                                          MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, 
-                                         MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT,
+                                         MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT,
                                          MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
 					 MPI_DOUBLE, 	
                                          MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
@@ -3907,7 +3933,7 @@ void SPARC_Input_MPI_create(MPI_Datatype *pSPARC_INPUT_MPI) {
                                          MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, 
                                          MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, 
                                          MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR,
-                                         MPI_CHAR};
+                                         MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR};
     int blens[N_MEMBR] = {3, 3, 7,      /* int array */ 
                           1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1,
@@ -3927,7 +3953,7 @@ void SPARC_Input_MPI_create(MPI_Datatype *pSPARC_INPUT_MPI) {
                           1, 1, 1, 1, 1, 
                           1, 1, 1, 1, 1, 
                           1, 1, 1, 1, 1, 
-                          1, 1, 1, 1, 1, 1,/* int */ 
+                          1, 1, 1, 1, 1, 1, 1,/* int */ 
                           9, 3, L_QMASS, L_kpoint, L_kpoint, L_kpoint,/* double array */
                           1, 1, 1, 1, 1, 
                           1, 1, 1, 1, 1, 
@@ -3942,7 +3968,7 @@ void SPARC_Input_MPI_create(MPI_Datatype *pSPARC_INPUT_MPI) {
                           1, 1, 1, 1, 1, 
                           1, 1, 1, /* double */
                           32, 32, 32, L_STRING, L_STRING, /* char */
-                          L_STRING};
+                          L_STRING, L_STRING, L_STRING, L_STRING};
 
     // calculating offsets in an architecture independent manner
     MPI_Aint addr[N_MEMBR],disps[N_MEMBR], base;
@@ -4049,6 +4075,7 @@ void SPARC_Input_MPI_create(MPI_Datatype *pSPARC_INPUT_MPI) {
     MPI_Get_address(&sparc_input_tmp.kpt_line_num, addr + i++);
     MPI_Get_address(&sparc_input_tmp.BandStr_Plot_Flag, addr + i++);
     MPI_Get_address(&sparc_input_tmp.kpt_per_line, addr + i++);
+    MPI_Get_address(&sparc_input_tmp.densfilecount, addr + i++);
     // double array type
     MPI_Get_address(&sparc_input_tmp.LatVec, addr + i++);
     MPI_Get_address(&sparc_input_tmp.kptshift, addr + i++);
@@ -4122,7 +4149,9 @@ void SPARC_Input_MPI_create(MPI_Datatype *pSPARC_INPUT_MPI) {
     MPI_Get_address(&sparc_input_tmp.filename, addr + i++);
     MPI_Get_address(&sparc_input_tmp.filename_out, addr + i++);
     MPI_Get_address(&sparc_input_tmp.SPARCROOT, addr + i++);
-
+    MPI_Get_address(&sparc_input_tmp.densfilename_tot, addr + i++);
+    MPI_Get_address(&sparc_input_tmp.densfilename_up, addr + i++);
+    MPI_Get_address(&sparc_input_tmp.densfilename_down, addr + i++);
     for (i = 0; i < N_MEMBR; i++) {
         disps[i] = addr[i] - base;
     }

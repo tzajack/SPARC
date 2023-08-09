@@ -28,7 +28,7 @@
 #define max(x,y) ((x)>(y)?(x):(y))
 
 
-void Distr_Dens(SPARC_OBJ *pSPARC)
+void Distr_Dens(SPARC_OBJ *pSPARC,int spintype)
 {               
     if (pSPARC->dmcomm_phi == MPI_COMM_NULL) return;
     int gridsizes[3], sdims[3], rdims[3], sVert[6];
@@ -55,19 +55,22 @@ void Distr_Dens(SPARC_OBJ *pSPARC)
     sVert[0] = 0; sVert[1] = pSPARC->Nx-1;
     sVert[2] = 0; sVert[3] = pSPARC->Ny-1;
     sVert[4] = 0; sVert[5] = pSPARC->Nz-1;  
-    //printf("grid x: %d\n",gridsizes[0]);
-    //printf("grid y: %d\n",gridsizes[1]);
-    //printf("grid z: %d\n",gridsizes[2]);
-    //printf("rdimsx: %d\n",rdims[0]);
-    //printf("rdimsy: %d\n",rdims[1]);
-    //printf("rdimsz: %d\n",rdims[2]);
-    //sleep(2);
-    DD2DD(pSPARC, gridsizes,sVert,pSPARC->dens_rho,pSPARC->DMVertices, pSPARC->electronDens_at, send_comm ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );
-    //DD2DD(&sender,&rec, gridsizes,sVert,pSPARC->dens_rho,pSPARC->DMVertices, pSPARC->electronDens_at, send_comm     ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );        
-    //Free_D2D_Target(&d2d_sender, &d2d_recvr, pSPARC->dmcomm_phi, send_comm);
-    //if (dmcomm_rank == 0) 
-    //    MPI_Comm_free(&send_comm);
+   
+
+    if(spintype == 1)
+        DD2DD(pSPARC, gridsizes,sVert,pSPARC->dens_rho,pSPARC->DMVertices, pSPARC->electronDens, send_comm ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );    
+    else if(spintype == 2)
+        DD2DD(pSPARC, gridsizes,sVert,pSPARC->dens_rho_up,pSPARC->DMVertices, pSPARC->electronDens+pSPARC->Nd_d, send_comm ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );
+    else
+        DD2DD(pSPARC, gridsizes,sVert,pSPARC->dens_rho_dwn,pSPARC->DMVertices, pSPARC->electronDens+2*pSPARC->Nd_d, send_comm ,sdims , pSPARC->dmcomm_phi , rdims , pSPARC->dmcomm_phi );
+   
 }
+
+
+
+
+
+
 
 /**
  * @brief   Initialze electron density.
@@ -82,17 +85,47 @@ void Init_electronDensity(SPARC_OBJ *pSPARC) {
     if (pSPARC->dmcomm_phi != MPI_COMM_NULL) {
         int  i, DMnd;
         DMnd = pSPARC->Nd_d * (2*pSPARC->Nspin - 1);
+        int spintot = 1, spinup = 2, spindwn = 3;
         // for 1st Relax step/ MDstep, set electron density to be sum of atomic potentials
-       
-       
         if (pSPARC->BandStr_Plot_Flag == 1)
         {
-            read_dens(pSPARC);
-            if(rank==0)
-                printf("Read dens file!\n");
+             if (pSPARC->spin_typ == 0)
+             {
+                 if(rank==0)
+                    read_dens(pSPARC,spintot);
+
+                 Distr_Dens(pSPARC,spintot);
+                 return; 
+             }
+             else
+             {
+                 
+                 
+                 if(rank==0)
+                    read_dens(pSPARC,spinup);
+               
+                 Distr_Dens(pSPARC,spinup);
+                    
+
+
+                 if(rank==0)
+                    read_dens(pSPARC,spindwn);
+               
+                 Distr_Dens(pSPARC,spindwn);
+
+                 
+
+
+                 if(rank==0)
+                     read_dens(pSPARC,spintot);
+                 Distr_Dens(pSPARC,spintot);             
+                 return;
+                 
+
+             }
+        } 
        
-            Distr_Dens(pSPARC);
-        }    
+     
 
         if( (pSPARC->elecgs_Count - pSPARC->StressCount) == 0){
             // TODO: implement restart based on previous MD electron density. Things to consider:
@@ -105,12 +138,12 @@ void Init_electronDensity(SPARC_OBJ *pSPARC) {
             //} else {
            
                 
-
                 
-
+            
             for (i = 0; i < DMnd; i++)
                 pSPARC->electronDens[i] = pSPARC->electronDens_at[i];   
-           // printf("DMnd = %d\n",DMnd);
+   
+            // printf("DMnd = %d\n",DMnd);
            // sleep(3);
            // for (i = 0; i < DMnd; i++)            
               //  printf("DD2DD: %lf\n", pSPARC->electronDens[i]);

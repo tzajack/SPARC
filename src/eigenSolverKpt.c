@@ -120,7 +120,15 @@ void eigSolve_CheFSI_kpt(int rank, SPARC_OBJ *pSPARC, int SCFcount, double error
     {
         count = pSPARC->rhoTrigger + (SCFcount-1) * pSPARC->Ncheb;
     }   
-                
+    if(!rank)
+        {
+            for(int  i=0;i<5;i++)
+                printf("Total rho[%d] = %.10f \n",i,pSPARC->electronDens[i]);
+            for(int  i=0;i<5;i++)
+                printf("Up rho[%d] = %.10f \n",i,pSPARC->electronDens[i+pSPARC->Nd_d]);
+            for(int  i=0;i<5;i++)
+                printf("Down rho[%d] = %.10f \n",i,pSPARC->electronDens[i+2*pSPARC->Nd_d]);
+        }  
     while(count < pSPARC->rhoTrigger + SCFcount*pSPARC->Ncheb){
         
         
@@ -553,7 +561,7 @@ void ChebyshevFiltering_kpt(
 
     t1 = MPI_Wtime();
     // find Y = (H - c*I)X
-    int sg  = pSPARC->spin_start_indx + spn_i;
+    int sg  = pSPARC->spin_start_indx + spn_i;    
     Hamiltonian_vectors_mult_kpt(
         pSPARC, DMnd, DMVertices, pSPARC->Veff_loc_dmcomm + sg * pSPARC->Nd_d_dmcomm, 
         pSPARC->Atom_Influence_nloc, pSPARC->nlocProj, ncol, -c, X, Y, spn_i, kpt, comm
