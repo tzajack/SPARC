@@ -291,7 +291,13 @@ void Free_SPARC(SPARC_OBJ *pSPARC) {
         free(pSPARC->k2_loc); 
         free(pSPARC->k3_loc);
     }
-
+    if (pSPARC->BandStr_Plot_Flag == 1 && rank == 0)
+    {
+        free(pSPARC->dens_rho);
+        free(pSPARC->dens_rho_up);
+        free(pSPARC->dens_rho_dwn);
+    
+    }
 	if (pSPARC->dmcomm != MPI_COMM_NULL && pSPARC->bandcomm_index >= 0) {
 		free(pSPARC->Veff_loc_dmcomm);
 	}

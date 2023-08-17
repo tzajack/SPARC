@@ -976,9 +976,9 @@ typedef struct _SPARC_OBJ{
     double k1_inpt_kpt[L_kpoint],k2_inpt_kpt[L_kpoint],k3_inpt_kpt[L_kpoint];
     int BandStr_Plot_Flag;
     int kpt_per_line;
-    double dens_rho[L_kpoint*L_kpoint*L_kpoint];
-    double dens_rho_up[L_kpoint*L_kpoint*L_kpoint];
-    double dens_rho_dwn[L_kpoint*L_kpoint*L_kpoint];
+    double *dens_rho;
+    double *dens_rho_up;
+    double *dens_rho_dwn;
     char densfilename_tot[L_STRING];
     char densfilename_up[L_STRING];
     char densfilename_down[L_STRING]; 

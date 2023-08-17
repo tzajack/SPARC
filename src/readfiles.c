@@ -775,11 +775,13 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
                 printf("k-point %d coordinates: (%lf,%lf,%lf)\n",line,pSPARC_Input->kredx[line],pSPARC_Input->kredy[line],pSPARC_Input->kredz[line]);
             
         }else if(strcmpi(str,"DENS_FILE_NAME:") == 0){
+            
             char fileNames[4096]; 
             //fscanf(input_fp,"%s",fileNames);
             //fscanf(input_fp, "%*[^\n]\n");
           
             fscanf(input_fp,"%d",&pSPARC_Input->densfilecount);
+            printf("There are %d number of files.\n",pSPARC_Input->densfilecount);
             if(pSPARC_Input->densfilecount == 1)
             {
                 fscanf(input_fp,"%[^\n]", str);
@@ -809,7 +811,7 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
             printf("Up Dens file name:%s\n", pSPARC_Input->densfilename_up);
             printf("down Dens file name:%s\n", pSPARC_Input->densfilename_down);
             //printf("Dens file name:%s\n", fileNames);
-            sleep(5);
+            //sleep(5);
         
         } 
         
@@ -1057,12 +1059,21 @@ void read_dens(SPARC_OBJ *pSPARC, int spintype){
     char *dens_filename = malloc(L_STRING * sizeof(char));
     char *str           = malloc(L_STRING * sizeof(char));
     if(spintype == 1)
+    {    
         snprintf(dens_filename, L_STRING, "%s", pSPARC->densfilename_tot);
+        pSPARC->dens_rho = malloc(pSPARC->Nd*sizeof(double));
+    }
     else if(spintype == 2)
+    {
         snprintf(dens_filename, L_STRING, "%s", pSPARC->densfilename_up);
+        pSPARC->dens_rho_up = malloc(pSPARC->Nd*sizeof(double));
+    }
     else
+    {
+        
         snprintf(dens_filename, L_STRING, "%s", pSPARC->densfilename_down);
-
+        pSPARC->dens_rho_dwn = malloc(pSPARC->Nd*sizeof(double));
+    }
     FILE *dens_fp = fopen(dens_filename, "r");
 
     
