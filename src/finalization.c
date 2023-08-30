@@ -293,9 +293,15 @@ void Free_SPARC(SPARC_OBJ *pSPARC) {
     }
     if (pSPARC->BandStr_Plot_Flag == 1 && rank == 0)
     {
-        free(pSPARC->dens_rho);
-        free(pSPARC->dens_rho_up);
-        free(pSPARC->dens_rho_dwn);
+        if(pSPARC->spin_typ == 0)
+            free(pSPARC->dens_rho);
+ 
+        else if(pSPARC->spin_typ > 0)
+        {
+            free(pSPARC->dens_rho);
+            free(pSPARC->dens_rho_up);
+            free(pSPARC->dens_rho_dwn);
+        }
     
     }
 	if (pSPARC->dmcomm != MPI_COMM_NULL && pSPARC->bandcomm_index >= 0) {

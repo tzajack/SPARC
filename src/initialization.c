@@ -1520,6 +1520,7 @@ void SPARC_copy_input(SPARC_OBJ *pSPARC, SPARC_INPUT_OBJ *pSPARC_Input) {
         pSPARC->MAXIT_SCF = 1;
         pSPARC->MINIT_SCF = 1; 
         pSPARC->PrintElecDensFlag = 0;
+        pSPARC->PrintEigenFlag = 1;
     } 
     
     

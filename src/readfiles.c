@@ -810,8 +810,7 @@ void read_input(SPARC_INPUT_OBJ *pSPARC_Input, SPARC_OBJ *pSPARC) {
             printf("Total Dens file name:%s\n", pSPARC_Input->densfilename_tot);
             printf("Up Dens file name:%s\n", pSPARC_Input->densfilename_up);
             printf("down Dens file name:%s\n", pSPARC_Input->densfilename_down);
-            //printf("Dens file name:%s\n", fileNames);
-            //sleep(5);
+            
         
         } 
         
